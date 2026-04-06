@@ -1,0 +1,12 @@
+- name: mostrando un mensaje
+  debug:
+    msg: "Hola, soy un rol nginx ejecutando mi main.yml!!"
+- name: Verificando que nginx este en la version mas reciente
+  apt:
+    name: nginx
+    state: latest
+    update_cache: yes
+- name: Verificando que nginx este en ejecutacion
+  systemd: started
+  name: nginx
+  enabled: yes

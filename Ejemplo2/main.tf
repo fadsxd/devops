@@ -6,23 +6,65 @@ terraform {
     }
   }
 }
+locals {
+  nombre_workspace = terraform.workspace
+  ruta_private_key = "~/Descargas/devops.pem"
+  nombre_key = "devops"
+  usuario_ssh = "ubuntu"
+}
+
+
 provider "aws" {
   region = var.aws_region
 }
 
 #data "aws_subnet" "default" {
- # default_for_az = true
+# default_for_az = true
 #}
 
 resource "aws_instance" "mi_servidor" {
-  for_each = var.nombres_servicios
+ #for_each      = var.nombres_servicios
+  count = terraform.workspace == "produccion" ? 2 : 1
   ami           = "ami-0ec10929233384c7f"
   instance_type = "t3.micro"
-  subnet_id = "subnet-0c95a538ce1c5bdc9"
+  #subnet_id = "subnet-0c95a538ce1c5bdc9"
   #subnet_id = data.aws_subnets.default.ids[0]
+  subnet_id                   = module.vpc.public_subnets[0]
+  vpc_security_group_ids      = [module.terraform-sg.security_group_id]
+  associate_public_ip_address = true
+  key_name = loca.nombre_key
   tags = {
-    Name = "ServidorTerraform-${each.key}"
+    #Name        = "ServidorTerraform-${each.key}"
+    Name = format("%s-$%s",terraform.workspace,count.index)
     Environment = "Dev"
-    Owner = "Pepito"
+    Owner       = "Pepito"
   }
+  provisioner "remote-exec"{
+   inline = [
+     "echo 'Esperando conexion SSH en ${self.public_ip}",
+     "sudo apt-get update -y",
+     "sudo apt-get install -y nginx"
+   ]
+   connection {
+     type = "ssh"
+     user = local.usuario.ssh
+     private_key = file(local.ruta_private_key)
+     host = self.public_ip
+     timeout = "5m"
+   }
+#CONFIGURACION LOCAL
+
+   }
+}
+
+resource "aws_cloudwatch_log_group" "grupo_log_ec2" {
+  for_each = var.nombres_servicios
+  tags = {
+    Environment = "Dev"
+    Servicio    = each.key
+  }
+  lifecycle {
+    create_before_destroy = true
+  }
+
 }
