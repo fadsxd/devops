@@ -2,5 +2,5 @@
   hosts: all
   remote_user: ubuntu
   become: yes
-  role:
-    -nginx
+  roles:
+    -  nginx

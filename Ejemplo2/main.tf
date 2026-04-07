@@ -8,7 +8,7 @@ terraform {
 }
 locals {
   nombre_workspace = terraform.workspace
-  ruta_private_key = "~/Descargas/devops.pem"
+  ruta_private_key = "~/Downloads/devops.pem"
   nombre_key = "devops"
   usuario_ssh = "ubuntu"
 }
@@ -32,29 +32,31 @@ resource "aws_instance" "mi_servidor" {
   subnet_id                   = module.vpc.public_subnets[0]
   vpc_security_group_ids      = [module.terraform-sg.security_group_id]
   associate_public_ip_address = true
-  key_name = loca.nombre_key
+  key_name = local.nombre_key
   tags = {
     #Name        = "ServidorTerraform-${each.key}"
-    Name = format("%s-$%s",terraform.workspace,count.index)
+    Name = format("%s-%s",terraform.workspace,count.index)
     Environment = "Dev"
     Owner       = "Pepito"
   }
-  provisioner "remote-exec"{
+  provisioner "remote-exec" {
    inline = [
-     "echo 'Esperando conexion SSH en ${self.public_ip}",
+     "echo 'Esperando conexion SSH en ${self.public_ip}'",
      "sudo apt-get update -y",
      "sudo apt-get install -y nginx"
    ]
    connection {
      type = "ssh"
-     user = local.usuario.ssh
+     user = local.usuario_ssh
      private_key = file(local.ruta_private_key)
      host = self.public_ip
      timeout = "5m"
    }
-#CONFIGURACION LOCAL
-
    }
+   provisioner "local-exec" {
+     command = "ansible-playbook -i ${self.public_ip}, --private-key ${local.ruta_private_key} ~/Documents/devops/IaC_terraform/Ansible/nginx.yml"   
+  }
+
 }
 
 resource "aws_cloudwatch_log_group" "grupo_log_ec2" {

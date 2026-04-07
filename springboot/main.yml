@@ -1,0 +1,12 @@
+-  name: Desplegando servicio Spring boot
+   hosts: all
+   become: yes
+   remote_user: ubuntu
+   vars:
+    app_name: springboot-run
+    app_user: springuser
+    app_dir: /opt/proyspring
+    jar_file: springboot-run.jar
+    service-name: springboot
+   roles:
+    - springboot
